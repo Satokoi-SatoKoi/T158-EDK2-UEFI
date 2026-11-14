@@ -1,0 +1,60 @@
+## @file
+#  T158 GRUB 风格启动菜单 (参考 UniXNU 截图)
+#
+#  输出: 画在屏幕上 (ConOut = 帧缓冲图形控制台)
+#  输入: 音量上/下 选择, 电源键 确认; 串口方向键/回车同样有效
+#
+#  菜单项:
+#    1. EFI loader (WinPE)  —— 从 ESP 加载 bootmgfw.efi (需存储驱动就绪)
+#    2. UEFI Shell          —— 内嵌 FV 的 Shell
+#    3. Restart
+#    4. Power off
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = T158BootMenu
+  FILE_GUID                      = 9E4B2C7A-1D36-4F58-8A90-3B7C5E1D6F42
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = T158BootMenuEntry
+
+[Sources]
+  T158BootMenu.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  ShellPkg/ShellPkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+  UefiBootServicesTableLib
+  UefiRuntimeServicesTableLib
+  UefiBootManagerLib
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  PrintLib
+  DxeServicesLib
+  DevicePathLib
+  MemoryAllocationLib
+  IoLib
+  T158BootControlLib
+  T158LinuxBootLib
+
+[Guids]
+  gT158ShellFileGuid
+
+[FixedPcd]
+  gT158TokenSpaceGuid.PcdRebootModeRegBase
+  gT158TokenSpaceGuid.PcdRebootModeRegStride
+  gT158TokenSpaceGuid.PcdRebootModeRecoveryLo
+  gT158TokenSpaceGuid.PcdRebootModeRecoveryHi
+  gT158TokenSpaceGuid.PcdRebootModeNormalLo
+  gT158TokenSpaceGuid.PcdRebootModeNormalHi
+
+[Protocols]
+  gEfiSimpleFileSystemProtocolGuid

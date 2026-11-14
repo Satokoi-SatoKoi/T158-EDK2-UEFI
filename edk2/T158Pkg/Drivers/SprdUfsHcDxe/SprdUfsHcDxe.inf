@@ -1,0 +1,44 @@
+## @file
+#  SprdUfsHcDxe —— 展锐 UMS9621 UFS Host Controller (MMIO @0x22000000)
+#
+#  为 UfsPassThruDxe 提供 EDKII_UFS_HOST_CONTROLLER_PROTOCOL。
+#  详见 SprdUfsHcDxe.c 头注释。
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SprdUfsHcDxe
+  FILE_GUID                      = A4C71E92-8F30-4D5B-B2C8-6E9A1D7F3B54
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = SprdUfsHcDriverEntry
+
+[Sources]
+  SprdUfsHcDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  DevicePathLib
+  IoLib
+  MemoryAllocationLib
+  PcdLib
+  # DMA Map/Unmap 的缓存维护 (InvalidateDataCacheRange 等)
+  # 实现来自 DSC 映射: ArmPkg/Library/ArmCacheMaintenanceLib
+  CacheMaintenanceLib
+
+[Protocols]
+  gEfiDevicePathProtocolGuid                    ## PRODUCES
+  gEdkiiUfsHostControllerProtocolGuid           ## PRODUCES
+
+[FixedPcd]
+  gT158TokenSpaceGuid.PcdUfsHcBase
+  gT158TokenSpaceGuid.PcdUfsHcSize

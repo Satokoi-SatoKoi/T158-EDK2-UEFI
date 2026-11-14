@@ -1,0 +1,149 @@
+## @file
+#  T158Pkg —— 紫光展锐 T158 (UMS9621 / sharkl5pro, sprd,ums9621-1h10) 的 EDK2 平台包
+#
+#  固件形态: EDK2 固件以 "Android boot.img 的内核载荷" 形式被原厂 U-Boot 加载
+#  (原厂 u-boot 无 efi_loader, 无法直接 bootefi), 固件自带 Shell, 开机即进入 UEFI Shell。
+#
+#  本包地址与 DDR 布局均来自对 D:\紫光展锐编译 分区镜像的实测取证, 详见 docs/01。
+#
+#  Copyright (c) 2026. All rights reserved.
+##
+
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = T158Pkg
+  PACKAGE_GUID                   = 8B7A1F62-4C31-4E5A-9F0E-0A15D8C7B201
+  PACKAGE_VERSION                = 0.1
+
+[Includes]
+  Include
+
+[Guids]
+  gT158TokenSpaceGuid     = { 0x2A9E5D71, 0x6B0C, 0x4D8A, { 0x93, 0x17, 0x4E, 0x2B, 0xF5, 0xC1, 0x90, 0x6D } }
+  # FV 中内嵌 Shell 所在文件的 FILE GUID
+  # 必须与 ShellPkg/Application/Shell/Shell.inf 的 FILE_GUID 一致
+  # (edk2 中为 7C04A583-9E3E-4F1C-AD65-E05268D0B4D1, 即 gUefiShellFileGuid;
+  #  若你的 edk2 版本不同, 请把这里改成该 INF 里的 FILE_GUID, 或直接用 gUefiShellFileGuid)
+  gT158ShellFileGuid      = { 0x7C04A583, 0x9E3E, 0x4F1C, { 0xAD, 0x65, 0xE0, 0x52, 0x68, 0xD0, 0xB4, 0xD1 } }
+  # 传递给 DXE 的 "载荷交接信息" HOB GUID
+  gT158HandoffGuid        = { 0x6F4C9A2E, 0x8B3D, 0x4F71, { 0xA2, 0x0C, 0x1D, 0x64, 0xE9, 0x77, 0x3B, 0x51 } }
+  # GRUB 风格启动菜单应用 (T158BootMenu.inf 的 FILE_GUID)
+  gT158BootMenuFileGuid   = { 0x9E4B2C7A, 0x1D36, 0x4F58, { 0x8A, 0x90, 0x3B, 0x7C, 0x5E, 0x1D, 0x6F, 0x42 } }
+
+  ## GUID HOB: 数据为 UINT64 —— SEC 把 U-Boot 传进来的 DTB 物理地址交给 DXE。
+  ## SEC 已对该区域 BuildMemoryAllocationHob (1MB, EfiACPIMemoryNVS) 保留, 不会被覆盖。
+  gT158FdtHobGuid         = { 0x3E7D92B4, 0x6C51, 0x4A38, { 0xB9, 0xD2, 0x47, 0xA0, 0x5F, 0x1C, 0x8E, 0x63 } }
+
+[PcdsFixedAtBuild]
+  # 注: 代码用 FixedPcdGetBool() 访问, 必须声明为 FixedAtBuild
+  gT158TokenSpaceGuid.PcdUseDeviceTree        | FALSE | BOOLEAN | 0x00000001
+  gT158TokenSpaceGuid.PcdBootToShellFirst     | TRUE  | BOOLEAN | 0x00000002
+  # 注: 代码用 FixedPcdGetBool() 访问, 必须声明为 FixedAtBuild
+  # 注: 以下两个是 BOOLEAN 开关, 代码用 FixedPcdGetBool() 访问,
+  #     所以必须声明为 FixedAtBuild, 不能放 [PcdsFeatureFlag] (那需要 FeaturePcdGet)。
+  # TRUE: 从 x0 传入的 device tree 动态探测 DRAM / 串口; FALSE: 全部使用静态 PCD
+  # TRUE: 把内置 Shell 注册为第一启动项 (开机即进 Shell)
+
+  ## ---------------------------------------------------------------- DRAM
+  # 实测: /memory@80000000 reg = <0x0 0x80000000 0x2 0x0>, 即 base 0x80000000, 8GB
+  # 这里只向 UEFI 报告 2GB, 避免在 8GB 机型上做全量页表/资源描述的开销; 需要更大内存时改大即可。
+  gT158TokenSpaceGuid.PcdSystemMemoryBase     | 0x80000000 | UINT64 | 0x00000010
+  gT158TokenSpaceGuid.PcdSystemMemorySize     | 0x80000000 | UINT64 | 0x00000011
+
+  ## ------------------------------------------------- 固件自身运行位置 (FD/FV)
+  # 固件被原厂 U-Boot 当作 kernel 装载到 DRAM 低端 (~0x80008000) 后, SEC 会把整个 FD
+  # 自搬到 PcdFdBaseAddress 再运行; 该地址必须落在 DT 保留区之外。
+  # 实测保留区: 0x88000000-0xA2400000(modem) / 0xA2400000-0xA5000000(nrphy) /
+  #             0xA5000000-0xA9000000(iq) / 0xBE000000-0xBF000000(logo)
+  # 故选 0xA9000000 (其后 ~79MB 连续空间)。
+  gT158TokenSpaceGuid.PcdFdBaseAddress        | 0xA9000000 | UINT64 | 0x00000020
+  gT158TokenSpaceGuid.PcdFdSize               | 0x01800000 | UINT32 | 0x00000021
+  gT158TokenSpaceGuid.PcdFvBaseAddress        | 0xA9000000 | UINT64 | 0x00000022
+  gT158TokenSpaceGuid.PcdFvSize               | 0x01700000 | UINT32 | 0x00000023
+  # HOB 池 + DXE 可用内存区 (紧跟在 FD 之后)
+  gT158TokenSpaceGuid.PcdUefiMemoryRegionBase | 0xAA840000 | UINT64 | 0x00000024
+  gT158TokenSpaceGuid.PcdUefiMemoryRegionSize | 0x04000000 | UINT32 | 0x00000028
+  # SEC 栈 (紧跟在 FD 之后, UEFI 内存区之前)
+  gT158TokenSpaceGuid.PcdPrePiStackBase       | 0xAA800000 | UINT64 | 0x00000025
+  gT158TokenSpaceGuid.PcdPrePiStackSize       | 0x00040000 | UINT32 | 0x00000026
+  # CPU 核心数 (UMS9621: 6*A55 + 2*A76, 实测 DT 有 cpu@0..cpu@700)
+  gT158TokenSpaceGuid.PcdCoreCount            | 8          | UINT32 | 0x00000027
+
+  ## --------------------------------------------------------------- 串口
+  # 实测: /aliases serial1 = /soc/ap-apb/serial@10000, ap-apb ranges -> 0x20200000
+  #       => ttyS1 = 0x20210000; stdout-path = "serial1:115200n8"
+  gT158TokenSpaceGuid.PcdUartBase             | 0x20210000 | UINT64 | 0x00000030
+  gT158TokenSpaceGuid.PcdUartClockHz          | 26000000   | UINT32 | 0x00000031
+  gT158TokenSpaceGuid.PcdUartBaudRate         | 115200     | UINT64 | 0x00000032
+  gT158TokenSpaceGuid.PcdUartRegStride        | 4          | UINT32 | 0x00000033
+
+  ## ---------------------------------------------------- 存储 (供后续 UFS 驱动)
+  # 实测: /soc/ap-ahb/ufs@2000000, ap-ahb ranges -> 0x20000000 => 0x22000000
+  gT158TokenSpaceGuid.PcdUfsBase              | 0x22000000 | UINT64 | 0x00000040
+  # 实测: /soc/ap-ahb/sdio@22200000 (mmc0) => 0x42200000
+  gT158TokenSpaceGuid.PcdSdio0Base            | 0x42200000 | UINT64 | 0x00000041
+  gT158TokenSpaceGuid.PcdSdio1Base            | 0x42210000 | UINT64 | 0x00000042
+
+  ## --------------------------------------------------- 显示 (帧缓冲 GOP)
+  # 实测: /reserved-memory/logobuffer@be000000 reg = <0x0 0xBE000000 0x0 0x9E4000>
+  #       U-Boot 已点亮 DSI/DPU, 该地址就是当前正在被扫描的显存。
+  #       分辨率按 1080x2400 预估 (0x9E4000 = 10371072 ≈ 1080*2400*4);
+  #       若你的机型不同, 只改下面三个 PCD 即可, 不用动代码。
+  gT158TokenSpaceGuid.PcdFrameBufferBase      | 0xBE000000 | UINT64 | 0x00000060
+  gT158TokenSpaceGuid.PcdFrameBufferSize      | 0x009E4000 | UINT32 | 0x00000061
+  gT158TokenSpaceGuid.PcdScreenWidth          | 1080       | UINT32 | 0x00000062
+  gT158TokenSpaceGuid.PcdScreenHeight         | 2400       | UINT32 | 0x00000063
+  # 每行字节数; 0 = 自动 (Width * 4)
+  gT158TokenSpaceGuid.PcdScreenStride         | 0          | UINT32 | 0x00000064
+  # 0 = BGRX8888 (ARGB8888 小端, Android bootloader 最常用)
+  # 1 = RGBX8888
+  # 2 = PixelBltOnly
+  gT158TokenSpaceGuid.PcdScreenPixelFormat    | 0          | UINT32 | 0x00000065
+  ## --------------------------------------------------- 按键 (音量/电源)
+  # 取证 (dtb/ums9621-1h10.dtb):
+  #   Volume Up   -> PMIC EIC 第 4 脚 (按下=高), PMIC 走 ADI 桥 sprd,ums9620-adi @0x400000
+  #   Power       -> PMIC EIC 第 1 脚 (按下=低)
+  #   Volume Down -> AON GPIO @0x170000 第 127 脚 (按下=低)
+  # ADI 桥把 PMIC 寄存器号 n 映射到 MMIO 0x400000 + n*stride (16bit 寄存器, stride=2)
+  # EIC 基址 = PMIC reg 0x280 (DATA@+0x00, DMSK@+0x04)
+  gT158TokenSpaceGuid.PcdKeyAonGpioBase   | 0x170000  | UINT64 | 0x00000070
+  gT158TokenSpaceGuid.PcdKeyVolDownGpio   | 127       | UINT32 | 0x00000071
+  gT158TokenSpaceGuid.PcdKeyPmicAdiBase   | 0x400000  | UINT64 | 0x00000072
+  gT158TokenSpaceGuid.PcdKeyPmicRegStride | 2         | UINT32 | 0x00000073
+  gT158TokenSpaceGuid.PcdKeyPmicEicOffset | 0x280     | UINT32 | 0x00000074
+  gT158TokenSpaceGuid.PcdKeyVolUpBit      | 4         | UINT32 | 0x00000075
+  gT158TokenSpaceGuid.PcdKeyPowerBit      | 1         | UINT32 | 0x00000076
+
+  ## ------------------------------------------------------- UFS 主机控制器
+  # 取证: /soc/ap-ahb/ufs@2000000 (sprd,ufshc-ums9621), ap-ahb ranges 基址 0x20000000
+  #       => UFSHCI MMIO 基址 0x22000000, 长度 0x10000
+  gT158TokenSpaceGuid.PcdUfsHcBase        | 0x22000000 | UINT64 | 0x00000090
+  gT158TokenSpaceGuid.PcdUfsHcSize        | 0x00010000 | UINT32 | 0x00000091
+
+  # 像素放大倍数: UEFI 图形控制台字模是 8x19, 手机屏 1:1 显示字太小。
+  # 1 = 原生 (1080x2400 -> 135 列 x 126 行, 字很小)
+  # 2 = 放大 2 倍 (逻辑 540x1200 -> 67 列 x 63 行, 字高 38 物理像素)  [推荐]
+  # 3 = 放大 3 倍 (逻辑 360x800  -> 45 列 x 42 行, 字高 57 物理像素)
+  gT158TokenSpaceGuid.PcdGopScale             | 2          | UINT32 | 0x00000066
+
+  ## ---------------------------------------------- reboot-mode (启动目标)
+  # 原厂 U-Boot 靠 reboot-mode 决定加载谁:
+  #   normal   -> boot 分区 (boot_a / boot_b, 按 slot metadata 选)
+  #   recovery -> recovery 分区 (无 _a/_b 后缀, 即 TWRP 所在)
+  #   fastboot -> fastboot 模式
+  # 展锐通常把 boot mode 字符串 (如 "recovery" / "normal") 放在 2 个 32 位
+  # 寄存器里 (PMIC RTC 通用寄存器, 经 ADI 桥访问; 或在 AON/IRAM), U-Boot 冷启动时读取。
+  #
+  # 这些值必须按本机取证结果填写: py -3 tools/probe_rebootmode.py
+  # 全为 0 = 关闭该功能 (菜单里 Boot Recovery 退化为普通重启)。
+  gT158TokenSpaceGuid.PcdRebootModeRegBase    | 0x00000000 | UINT64 | 0x00000080
+  gT158TokenSpaceGuid.PcdRebootModeRegStride  | 4          | UINT32 | 0x00000081
+  # "recovery" / "normal" 的魔数: 常见做法是两个 32 位寄存器各存 4 个字符
+  gT158TokenSpaceGuid.PcdRebootModeRecoveryLo | 0x00000000 | UINT32 | 0x00000082
+  gT158TokenSpaceGuid.PcdRebootModeRecoveryHi | 0x00000000 | UINT32 | 0x00000083
+  gT158TokenSpaceGuid.PcdRebootModeNormalLo   | 0x00000000 | UINT32 | 0x00000084
+  gT158TokenSpaceGuid.PcdRebootModeNormalHi   | 0x00000000 | UINT32 | 0x00000085
+
+  ## ----------------------------------------------------------- 设备树兜底
+  # 若 x0 未传入 DTB, 可用这个静态地址 (vendor_boot 中 DTB 的物理地址, 实测偏移 0x4CF0040)
+  gT158TokenSpaceGuid.PcdDeviceTreeBase       | 0x00000000 | UINT64 | 0x00000050

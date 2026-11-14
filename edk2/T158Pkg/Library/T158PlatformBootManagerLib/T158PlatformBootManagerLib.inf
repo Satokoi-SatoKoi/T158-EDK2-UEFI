@@ -1,0 +1,49 @@
+## @file
+#  PlatformBootManagerLib —— 把内嵌在 FV 中的 Shell 作为默认启动项, 开机直进 UEFI Shell
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = T158PlatformBootManagerLib
+  FILE_GUID                      = 91A6F4C2-7D55-4E28-B0B3-6C4E19F2A504
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = PlatformBootManagerLib|DXE_DRIVER
+
+[Sources]
+  T158PlatformBootManagerLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  PrintLib
+  UefiLib
+  UefiBootServicesTableLib
+  UefiRuntimeServicesTableLib
+  DxeServicesLib
+  DxeServicesTableLib
+  DevicePathLib
+  UefiBootManagerLib
+  PcdLib
+  MemoryAllocationLib
+  T158FdtLib
+
+[Protocols]
+  gEfiSimpleTextOutProtocolGuid
+  gEfiSerialIoProtocolGuid
+  gEfiGraphicsOutputProtocolGuid
+  gEfiLoadedImageProtocolGuid
+
+[Guids]
+  gT158ShellFileGuid
+  gT158BootMenuFileGuid
+
+[FixedPcd]
+  gT158TokenSpaceGuid.PcdBootToShellFirst
+  gT158TokenSpaceGuid.PcdSystemMemoryBase

@@ -1,0 +1,41 @@
+## @file
+#  T158 串口键盘输入驱动 (只提供 ConIn, 不提供 ConOut)
+#
+#  目的: 让 Shell 的输入来自电脑端串口终端, 而输出只走屏幕。
+#        标准 TerminalDxe 会同时提供 SimpleTextIn 和 SimpleTextOut,
+#        一旦它的 80x25 进入 ConOut, ConSplitter 会把屏幕也压成 80x25,
+#        屏幕上就只剩左上角一小块。所以这里只装输入。
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SprdSerialConInDxe
+  FILE_GUID                      = 7B3D5A24-91C8-4F6E-8E10-2D5A9C4B7F33
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = SprdSerialConInInitialize
+
+[Sources]
+  SprdSerialConInDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  MemoryAllocationLib
+  DebugLib
+  BaseLib
+  BaseMemoryLib
+
+[Protocols]
+  gEfiSerialIoProtocolGuid
+  gEfiSimpleTextInProtocolGuid
+  gEfiSimpleTextInputExProtocolGuid
+  gEfiDevicePathProtocolGuid
+
+[Depex]
+  gEfiSerialIoProtocolGuid

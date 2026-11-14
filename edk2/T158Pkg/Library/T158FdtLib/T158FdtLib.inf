@@ -1,0 +1,23 @@
+## @file
+#  T158FdtLib —— 最小 device tree 解析 (仅解析固件启动所需: 内存 / 串口 / chosen)
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = T158FdtLib
+  FILE_GUID                      = 5C1D8E40-2A77-4F63-9E51-3B7C2D90A402
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = T158FdtLib
+
+[Sources]
+  T158FdtLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib

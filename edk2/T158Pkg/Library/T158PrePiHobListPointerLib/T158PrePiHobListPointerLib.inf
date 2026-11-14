@@ -1,0 +1,25 @@
+## @file
+#  PrePiHobListPointerLib —— SEC 阶段 HOB 链表指针的存储位置
+#
+#  同时导出 PrePi{Get,Set}HobList 与 {Get,Set}HobList 两套名字,
+#  以兼容不同版本 edk2 中该库的函数命名差异。
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = T158PrePiHobListPointerLib
+  FILE_GUID                      = 7D31C5A9-4E62-4B08-9C77-2F1A5D8E6B03
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = PrePiHobListPointerLib
+
+[Sources]
+  T158PrePiHobListPointerLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib

@@ -1,0 +1,52 @@
+## @file
+#  T158 / UMS9621 帧缓冲 GOP 驱动
+#
+#  思路: 原厂 U-Boot 已经点亮 DSI/DPU 并把显存设在 /reserved-memory/logobuffer,
+#        跳转到本固件时屏幕仍在持续扫描这块显存。因此 UEFI 侧无需重新初始化
+#        显示控制器, 只要把 logobuffer 作为线性帧缓冲发布成
+#        EFI_GRAPHICS_OUTPUT_PROTOCOL, 再挂 GraphicsConsoleDxe, 即可在屏幕上
+#        看到 Shell。
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SprdGopDxe
+  FILE_GUID                      = 4A2F1E9C-3B5D-884E-A721-0F6D8B3E2C51
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = SprdGopDxeInitialize
+
+[Sources]
+  SprdGopDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  DxeServicesTableLib
+  DebugLib
+  PcdLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  FrameBufferBltLib
+
+[Protocols]
+  gEfiGraphicsOutputProtocolGuid
+  gEfiDevicePathProtocolGuid
+
+[FixedPcd]
+  gT158TokenSpaceGuid.PcdFrameBufferBase
+  gT158TokenSpaceGuid.PcdFrameBufferSize
+  gT158TokenSpaceGuid.PcdScreenWidth
+  gT158TokenSpaceGuid.PcdScreenHeight
+  gT158TokenSpaceGuid.PcdScreenStride
+  gT158TokenSpaceGuid.PcdScreenPixelFormat
+  gT158TokenSpaceGuid.PcdGopScale
+
+[Depex]
+  TRUE

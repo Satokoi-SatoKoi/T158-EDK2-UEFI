@@ -1,0 +1,43 @@
+## @file
+#  T158PlatformLib —— 平台信息(内存/UART)与 MMU 映射表
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = T158PlatformLib
+  FILE_GUID                      = B3C71E58-9D40-4A6F-8E21-5A0C7F3D2A05
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = T158PlatformLib
+
+[Sources]
+  T158PlatformLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  ArmPkg/ArmPkg.dec
+  ArmPlatformPkg/ArmPlatformPkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  SerialPortLib
+  PcdLib
+  T158FdtLib
+
+# 重要: FixedPcdGet*() 访问的每个 PCD 都必须在这里声明, 否则编译期
+#       生成 .iii 时该符号未定义, 报 "_PCD_VALUE_xxx undeclared"。
+[FixedPcd]
+  gT158TokenSpaceGuid.PcdUseDeviceTree
+  gT158TokenSpaceGuid.PcdSystemMemoryBase
+  gT158TokenSpaceGuid.PcdSystemMemorySize
+  gT158TokenSpaceGuid.PcdFdBaseAddress
+  gT158TokenSpaceGuid.PcdFdSize
+  gT158TokenSpaceGuid.PcdUartBase
+  gT158TokenSpaceGuid.PcdUartClockHz
+  gT158TokenSpaceGuid.PcdUartBaudRate
+  # MMU 映射表里新增的帧缓冲条目用到
+  gT158TokenSpaceGuid.PcdFrameBufferBase
+  gT158TokenSpaceGuid.PcdFrameBufferSize

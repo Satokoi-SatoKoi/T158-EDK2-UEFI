@@ -1,0 +1,35 @@
+## @file
+#  T158BootControlLib —— 通过改写 misc 分区控制原厂 U-Boot 的启动目标
+#
+#  见 Include/Library/T158BootControlLib.h 中的取证说明。
+#  前置: 需要 UFS 驱动提供 misc 分区的 BlockIo/DiskIo。
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = T158BootControlLib
+  FILE_GUID                      = 3D7A9C15-6E42-4B08-9F5A-2C8E1B7D4A63
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  # 必须显式列出"哪些模块类型可以用这个库", 否则 BootMenu (UEFI_APPLICATION)
+  # 引用它时会报: Library Class [...] is not supported for module type [...]
+  LIBRARY_CLASS                  = T158BootControlLib|DXE_DRIVER UEFI_DRIVER UEFI_APPLICATION
+
+[Sources]
+  T158BootControlLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  MemoryAllocationLib
+  UefiBootServicesTableLib
+
+[Protocols]
+  gEfiBlockIoProtocolGuid
+  gEfiDiskIoProtocolGuid
+  gEfiPartitionInfoProtocolGuid

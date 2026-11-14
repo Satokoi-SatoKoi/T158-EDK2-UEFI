@@ -1,0 +1,31 @@
+## @file
+#  SerialPortLib —— 展锐 UMS9621 (sprd,sc9836-uart) 轮询模式串口
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SprdSerialPortLib
+  FILE_GUID                      = 4E2A9D31-1B77-4C0D-8F52-7A0C6E19D301
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = SerialPortLib
+  CONSTRUCTOR                    = SprdSerialPortLibConstructor
+
+[Sources]
+  SprdSerialPortLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  IoLib
+  PcdLib
+
+[FixedPcd]
+  gT158TokenSpaceGuid.PcdUartBase
+  gT158TokenSpaceGuid.PcdUartClockHz
+  gT158TokenSpaceGuid.PcdUartBaudRate
+  gT158TokenSpaceGuid.PcdUartRegStride

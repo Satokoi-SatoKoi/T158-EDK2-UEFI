@@ -1,0 +1,56 @@
+## @file
+#  T158 SEC —— 被原厂 U-Boot 当作 arm64 内核加载的固件入口
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = T158Sec
+  FILE_GUID                      = 2F8A5D14-6C31-4E97-B0D2-7A5C3E19F401
+  MODULE_TYPE                    = SEC
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = PayloadEntry
+
+[Sources]
+  SecMain.c
+
+[Sources.AARCH64]
+  AArch64/PayloadEntry.S
+
+[Packages]
+  MdePkg/MdePkg.dec
+  ArmPkg/ArmPkg.dec
+  ArmPlatformPkg/ArmPlatformPkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  ArmLib
+  ArmMmuLib
+  BaseLib
+  BaseMemoryLib
+  CacheMaintenanceLib
+  DebugLib
+  HobLib
+  IoLib
+  PeCoffLib
+  PcdLib
+  SerialPortLib
+  T158FdtLib
+  T158PlatformLib
+
+[FixedPcd]
+  gT158TokenSpaceGuid.PcdFdBaseAddress
+  gT158TokenSpaceGuid.PcdFdSize
+  gT158TokenSpaceGuid.PcdFvBaseAddress
+  gT158TokenSpaceGuid.PcdFvSize
+  gT158TokenSpaceGuid.PcdPrePiStackBase
+  gT158TokenSpaceGuid.PcdPrePiStackSize
+  gT158TokenSpaceGuid.PcdUefiMemoryRegionBase
+  gT158TokenSpaceGuid.PcdUefiMemoryRegionSize
+  gT158TokenSpaceGuid.PcdFrameBufferBase
+  gT158TokenSpaceGuid.PcdFrameBufferSize
+
+[Guids]
+  gT158FdtHobGuid
+
+[Depex]
+  TRUE

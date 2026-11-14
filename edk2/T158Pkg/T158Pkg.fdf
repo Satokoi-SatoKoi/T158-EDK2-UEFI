@@ -1,0 +1,165 @@
+## @file
+#  T158Pkg FDF —— 生成 24MB 的固件设备映像 (FD), 可直接作为 boot.img 的内核载荷
+#
+#  FD 布局:
+#    0x000000  FV (SEC + DXE Core + 驱动 + 内嵌 Shell)   <- FD 起点即 FV 起点
+#    ...       剩余空间 (mkpayload.py 生成的 ARM64 头在打包时前置 0x40 字节)
+##
+
+[Defines]
+  EFI_FIRMWARE_VOLUME_HEADER  = TRUE
+
+[FD.T158]
+BaseAddress   = 0xA9000000|gT158TokenSpaceGuid.PcdFdBaseAddress
+Size          = 0x01800000|gT158TokenSpaceGuid.PcdFdSize
+ErasePolarity = 1
+BlockSize     = 0x00001000
+NumBlocks     = 0x00001800
+
+0x00000000|0x01700000
+gT158TokenSpaceGuid.PcdFvBaseAddress|gT158TokenSpaceGuid.PcdFvSize
+FV = FVMAIN
+
+################################################################################
+[FV.FVMAIN]
+FvNameGuid         = 5E9A3B72-8D14-4C6F-A1E0-3B7D9C2F5A11
+BlockSize          = 0x1000
+# NumBlocks = 0 表示"按内容自动定尺寸", 结果就是 FV 永远被填满、且与 PcdFvSize
+# (0x01700000) 不一致 —— SecMain 建 FV HOB 时会报一个偏大的长度。
+# 这里固定为 0x170 个 4KB 块 = 0x170000, 与 PcdFvSize 对齐, 并留出后续加驱动的余量。
+NumBlocks          = 0x170
+FvAlignment        = 16
+ERASE_POLARITY     = 1
+MEMORY_MAPPED      = TRUE
+STICKY_WRITE       = TRUE
+LOCK_CAP           = TRUE
+LOCK_STATUS        = TRUE
+WRITE_DISABLED_CAP = TRUE
+WRITE_ENABLED_CAP  = TRUE
+WRITE_STATUS       = TRUE
+WRITE_LOCK_CAP     = TRUE
+WRITE_LOCK_STATUS  = TRUE
+READ_DISABLED_CAP  = TRUE
+READ_ENABLED_CAP   = TRUE
+READ_STATUS        = TRUE
+READ_LOCK_CAP      = TRUE
+READ_LOCK_STATUS   = TRUE
+
+  #
+  # SEC: 必须是 FIXED (XIP), 否则 SEC 会被链接到 0 地址
+  #
+  INF  T158Pkg/Sec/Sec.inf
+
+  #
+  # DXE Core
+  #
+  INF  MdeModulePkg/Core/Dxe/DxeMain.inf
+
+  #
+  # 基础服务
+  #
+  INF  MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
+  INF  MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
+  INF  MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
+  INF  MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
+  INF  MdeModulePkg/Universal/Metronome/Metronome.inf
+  INF  MdeModulePkg/Universal/MonotonicCounterRuntimeDxe/MonotonicCounterRuntimeDxe.inf
+  INF  MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
+  INF  MdeModulePkg/Universal/CapsuleRuntimeDxe/CapsuleRuntimeDxe.inf
+  INF  MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
+  INF  MdeModulePkg/Universal/StatusCodeHandler/RuntimeDxe/StatusCodeHandlerRuntimeDxe.inf
+
+  #
+  # 非易失变量 (无 Flash 驱动: 使用内存模拟, 掉电丢失)
+  #
+  INF  MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
+
+  #
+  # CPU / 中断 / 定时器
+  #
+  INF  ArmPkg/Drivers/CpuDxe/CpuDxe.inf
+  INF  ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
+  INF  ArmPkg/Drivers/TimerDxe/TimerDxe.inf
+
+  #
+  # 控制台:
+  #   输出: logobuffer 帧缓冲 -> GOP -> GraphicsConsole -> ConSplitter -> 屏幕
+  #   输入: 串口 -> SerialIo -> Terminal -> ConSplitter -> ConIn (电脑端串口终端)
+  #
+  INF  MdeModulePkg/Universal/SerialDxe/SerialDxe.inf
+  # 串口只做输入 (不装 TerminalDxe, 避免 80x25 拖垮屏幕分辨率)
+  INF  T158Pkg/Drivers/SprdSerialConInDxe/SprdSerialConInDxe.inf
+  INF  MdeModulePkg/Universal/Console/ConSplitterDxe/ConSplitterDxe.inf
+  INF  MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
+  INF  T158Pkg/Drivers/SprdGopDxe/SprdGopDxe.inf
+  INF  MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
+
+  #
+  # BDS: 由 T158PlatformBootManagerLib 拉起启动菜单
+  #
+  INF  MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
+
+  #
+  # UFS 存储栈 (与 DSC [Components] 一一对应)
+  #
+  INF  T158Pkg/Drivers/SprdUfsHcDxe/SprdUfsHcDxe.inf
+  INF  MdeModulePkg/Bus/Ufs/UfsPassThruDxe/UfsPassThruDxe.inf
+  INF  MdeModulePkg/Universal/Disk/DiskIoDxe/DiskIoDxe.inf
+  INF  MdeModulePkg/Universal/Disk/PartitionDxe/PartitionDxe.inf
+  INF  FatPkg/EnhancedFatDxe/Fat.inf
+
+  #
+  # GRUB 风格启动菜单 (音量键选择, 电源键确认; 可进 Shell / WinPE)
+  #
+  INF  T158Pkg/Application/T158BootMenu/T158BootMenu.inf
+
+  #
+  # 内嵌 Shell (由菜单第 2 项拉起)
+  #
+  INF  ShellPkg/Application/Shell/Shell.inf
+
+################################################################################
+[Rule.Common.SEC]
+  FILE SEC = $(NAMED_GUID) RELOCS_STRIPPED FIXED {
+    PE32     PE32                $(INF_OUTPUT)/$(MODULE_NAME).efi
+    UI       STRING ="$(MODULE_NAME)" Optional
+    VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.DXE_CORE]
+  FILE DXE_CORE = $(NAMED_GUID) FIXED {
+    PE32     PE32                $(INF_OUTPUT)/$(MODULE_NAME).efi
+    UI       STRING ="$(MODULE_NAME)" Optional
+    VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.DXE_RUNTIME_DRIVER]
+  FILE DRIVER = $(NAMED_GUID) {
+    PE32     PE32                $(INF_OUTPUT)/$(MODULE_NAME).efi
+    DXE_DEPEX    DXE_DEPEX       Optional $(INF_OUTPUT)/$(MODULE_NAME).depex
+    UI       STRING ="$(MODULE_NAME)" Optional
+    VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.DXE_DRIVER]
+  FILE DRIVER = $(NAMED_GUID) {
+    PE32     PE32                $(INF_OUTPUT)/$(MODULE_NAME).efi
+    DXE_DEPEX    DXE_DEPEX       Optional $(INF_OUTPUT)/$(MODULE_NAME).depex
+    UI       STRING ="$(MODULE_NAME)" Optional
+    VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.UEFI_DRIVER]
+  FILE DRIVER = $(NAMED_GUID) {
+    PE32     PE32                $(INF_OUTPUT)/$(MODULE_NAME).efi
+    DXE_DEPEX    DXE_DEPEX       Optional $(INF_OUTPUT)/$(MODULE_NAME).depex
+    UI       STRING ="$(MODULE_NAME)" Optional
+    VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.UEFI_APPLICATION]
+  FILE APPLICATION = $(NAMED_GUID) {
+    PE32     PE32                $(INF_OUTPUT)/$(MODULE_NAME).efi
+    UI       STRING ="$(MODULE_NAME)" Optional
+    VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }

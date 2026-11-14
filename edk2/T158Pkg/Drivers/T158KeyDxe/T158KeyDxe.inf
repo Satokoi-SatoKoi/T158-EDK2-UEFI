@@ -1,0 +1,56 @@
+## @file
+#  T158 按键输入驱动 (音量上/下 + 电源键 -> ConIn)
+#
+#  按键接线 (来自 dtb/ums9621-1h10.dtb 取证):
+#    Volume Up   -> PMIC EIC (sprd,ump96xx-eic) 第 4 脚, 按下 = 高电平
+#    Power       -> PMIC EIC 第 1 脚, 按下 = 低电平
+#    Volume Down -> AON GPIO (sprd,sc9860-gpio @0x170000) 第 127 脚, 按下 = 低电平
+#
+#  PMIC EIC 挂在 ADI 桥 (sprd,ums9620-adi @0x400000) 上, 寄存器空间
+#  = 0x400000 + PMIC寄存器号 * 2; EIC 基址 = PMIC reg 0x280, DATA @ +0x00。
+#
+#  映射: 音量上 -> Up 箭头, 音量下 -> Down 箭头, 电源 -> 回车
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = T158KeyDxe
+  FILE_GUID                      = 2C8F4A61-5D97-4B03-9E7A-6F1C8D2B4E55
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = T158KeyDxeInitialize
+
+[Sources]
+  T158KeyDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  MemoryAllocationLib
+  DebugLib
+  BaseLib
+  BaseMemoryLib
+  IoLib
+  PcdLib
+
+[Protocols]
+  gEfiSimpleTextInProtocolGuid
+  gEfiSimpleTextInputExProtocolGuid
+  gEfiDevicePathProtocolGuid
+
+[FixedPcd]
+  gT158TokenSpaceGuid.PcdKeyAonGpioBase
+  gT158TokenSpaceGuid.PcdKeyVolDownGpio
+  gT158TokenSpaceGuid.PcdKeyPmicAdiBase
+  gT158TokenSpaceGuid.PcdKeyPmicRegStride
+  gT158TokenSpaceGuid.PcdKeyPmicEicOffset
+  gT158TokenSpaceGuid.PcdKeyVolUpBit
+  gT158TokenSpaceGuid.PcdKeyPowerBit
+
+[Depex]
+  TRUE

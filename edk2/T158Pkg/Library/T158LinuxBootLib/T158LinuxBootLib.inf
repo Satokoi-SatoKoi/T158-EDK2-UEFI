@@ -1,0 +1,44 @@
+## @file
+#  T158LinuxBootLib —— UEFI 直接链式启动 Android/Linux kernel
+#
+#  读 UFS 分区的 boot.img → 拼 initrd → DTB 写 initrd 属性 →
+#  ExitBootServices → 跳 arm64 kernel。详见头文件。
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = T158LinuxBootLib
+  FILE_GUID                      = C2F80A63-9B41-4E7C-8D25-0A6F3E1B9C74
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = T158LinuxBootLib|DXE_DRIVER UEFI_DRIVER UEFI_APPLICATION
+
+[Sources]
+  T158LinuxBootLib.c
+  AArch64/EnterKernel.S
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  T158Pkg/T158Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  CacheMaintenanceLib
+  DebugLib
+  MemoryAllocationLib
+  UefiBootServicesTableLib
+  UefiLib
+  FdtLib
+  HobLib
+  PrintLib
+
+[Protocols]
+  gEfiBlockIoProtocolGuid
+  gEfiDiskIoProtocolGuid
+  gEfiPartitionInfoProtocolGuid
+
+[Guids]
+  gT158FdtHobGuid
